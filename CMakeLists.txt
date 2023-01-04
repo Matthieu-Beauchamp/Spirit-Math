@@ -32,8 +32,11 @@ if (NOT SPIRIT_SUPER_PROJECT)
         GIT_TAG        origin/master
         SOURCE_DIR spiritModules # oops are put in build*
     )
-    set(SPIRIT_BASE_BUILD_CATCH TRUE)
 
+    if (SPIRIT_MATH_BUILD_TESTS)
+        set(SPIRIT_BASE_BUILD_CATCH TRUE)
+    endif()
+    
     # other declarations...
 
     FetchContent_MakeAvailable(Spirit-Base) # ...
