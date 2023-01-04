@@ -1,0 +1,1 @@
+target_sources(spirit-module PRIVATE module.cpp)
