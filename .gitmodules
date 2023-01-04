@@ -1,3 +1,9 @@
 [submodule "docs/Spirit-Doxygen"]
 	path = docs/Spirit-Doxygen
 	url = https://github.com/Matthieu-Beauchamp/Spirit-Doxgen
+[submodule "ext_libs/xsimd"]
+	path = ext_libs/xsimd
+	url = https://github.com/xtensor-stack/xsimd
+[submodule "benchmarks/Celero"]
+	path = benchmarks/Celero
+	url = https://github.com/DigitalInBlue/Celero
