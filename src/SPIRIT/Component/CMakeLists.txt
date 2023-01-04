@@ -1,1 +1,1 @@
-target_sources(spirit-module PRIVATE module.cpp)
+target_sources(spirit-math PRIVATE module.cpp)

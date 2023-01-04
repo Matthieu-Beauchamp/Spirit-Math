@@ -7,7 +7,7 @@
 
 cmake_minimum_required(VERSION 3.13)
 
-project(Spirit-Module)
+project(Spirit-Math)
 
 # set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -52,19 +52,19 @@ spirit_define_option(
 )
 
 spirit_define_option(
-        SPIRIT_MODULE_BUILD_TESTS
+        SPIRIT_MATH_BUILD_TESTS
         FALSE BOOL
         "Select if tests should be built"
 )
 
 spirit_define_option(
-        SPIRIT_MODULE_BUILD_DOCS
+        SPIRIT_MATH_BUILD_DOCS
         FALSE BOOL
         "Select if docs should be built"
 )
 
 spirit_define_option(
-        SPIRIT_MODULE_BUILD_EXAMPLES
+        SPIRIT_MATH_BUILD_EXAMPLES
         FALSE BOOL
         "Select if examples should be built"
 )
@@ -73,52 +73,52 @@ spirit_define_option(
 ############################################################
 # Paths
 ############################################################
-set(SPIRIT_MODULE_ROOT ${PROJECT_SOURCE_DIR})
+set(SPIRIT_MATH_ROOT ${PROJECT_SOURCE_DIR})
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/built)
 set(LIBRARY_OUTPUT_PATH ${EXECUTABLE_OUTPUT_PATH}/lib)
 
-set(SPIRIT_MODULE_INCLUDE_DIR ${SPIRIT_MODULE_ROOT}/include)
-set(SPIRIT_MODULE_SRC_DIR ${SPIRIT_MODULE_ROOT}/src/SPIRIT)
+set(SPIRIT_MATH_INCLUDE_DIR ${SPIRIT_MATH_ROOT}/include)
+set(SPIRIT_MATH_SRC_DIR ${SPIRIT_MATH_ROOT}/src/SPIRIT)
 
 
 ############################################################
 # Build
 ############################################################
-spirit_update_submodules(${SPIRIT_MODULE_ROOT})
+spirit_update_submodules(${SPIRIT_MATH_ROOT})
 
-add_library(spirit-module "")
+add_library(spirit-math "")
 
-target_link_libraries(spirit-module spirit-base)
+target_link_libraries(spirit-math spirit-base)
 
-target_include_directories(spirit-module PUBLIC ${SPIRIT_MODULE_INCLUDE_DIR})
+target_include_directories(spirit-math PUBLIC ${SPIRIT_MATH_INCLUDE_DIR})
 
 
 # Dependencies #############################################
 
-# build_an_ext_lib(${SPIRIT_MODULE_ROOT}/ext_libs/lib spirit-module)
+# build_an_ext_lib(${SPIRIT_MATH_ROOT}/ext_libs/lib spirit-math)
 
 
 # Build Spirit Module #############################################
 
 # TODO: Include headers as sources (helps for meta information)
-set(SPIRIT_MODULE_COMPONENTS 
+set(SPIRIT_MATH_COMPONENTS 
     Component
 )
 
-foreach (COMPONENT ${SPIRIT_MODULE_COMPONENTS})
-    add_subdirectory("${SPIRIT_MODULE_SRC_DIR}/${COMPONENT}")
+foreach (COMPONENT ${SPIRIT_MATH_COMPONENTS})
+    add_subdirectory("${SPIRIT_MATH_SRC_DIR}/${COMPONENT}")
 endforeach ()
 
 
-if (SPIRIT_MODULE_BUILD_TESTS)
-    add_subdirectory("${SPIRIT_MODULE_ROOT}/test")
+if (SPIRIT_MATH_BUILD_TESTS)
+    add_subdirectory("${SPIRIT_MATH_ROOT}/test")
 endif ()
 
-if (SPIRIT_MODULE_BUILD_DOCS)
-    add_subdirectory("${SPIRIT_MODULE_ROOT}/docs/")
+if (SPIRIT_MATH_BUILD_DOCS)
+    add_subdirectory("${SPIRIT_MATH_ROOT}/docs/")
 endif ()
 
-if (SPIRIT_MODULE_BUILD_EXAMPLES)
-    add_subdirectory("${SPIRIT_MODULE_ROOT}/examples/")
+if (SPIRIT_MATH_BUILD_EXAMPLES)
+    add_subdirectory("${SPIRIT_MATH_ROOT}/examples/")
 endif ()
