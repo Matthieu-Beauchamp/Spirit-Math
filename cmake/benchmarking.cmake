@@ -6,11 +6,29 @@ macro(spirit_benchmark spiritLib targetName ...)
     set(${benchSrcsVar} ${${benchSrcsVar}} ${targetName})
 endmacro()
 
+
+function(spirit_plot_internal outputDir csv html)
+    set(plotScript ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/plot.py)
+    find_package(Python3)
+    if (NOT Python3_FOUND)
+        message(FATAL_ERROR "Could not find a python3 interpreter")
+    endif()
+
+    add_custom_command(
+        OUTPUT ${html}
+        COMMAND ${Python3_EXECUTABLE} ${plotScript} ${csv} ${html}
+        WORKING_DIRECTORY ${outputDir}
+        DEPENDS ${csv}
+    )
+
+endfunction()
+
+
 macro(spirit_analyse_benchmarks spiritLib outputDir)
     set(benchSrcsVar ${spiritLib}-benchSrcs)
     # call script on all
 
-    foreach(benchmark ${benchSrcsVar})
+    foreach(benchmark ${${benchSrcsVar}})
         set(csv ${benchmark}.csv)
 
         add_custom_command(
@@ -21,29 +39,12 @@ macro(spirit_analyse_benchmarks spiritLib outputDir)
 
         set(html ${benchmark}.html)
         set(htmls ${htmls} ${html})
-
-
-        set(plotScript ${CMAKE_CURRENT_SOURCE_DIR}/plot.py)
-        find_package(Python3 INTERPRETER)
-        if (NOT Python3_FOUND)
-            message(FATAL_ERROR "Could not find a python3 interpreter")
-        
-        add_custom_command(
-            OUTPUT ${html}
-            COMMAND ${Python3_EXECUTABLE} ${plotScript} ${csv} ${html}
-            WORKING_DIRECTORY ${outputDir}
-        )
+        spirit_plot_internal(${outputDir} ${csv} ${html})
 
     endforeach()
           
     add_custom_target(
         ${spiritLib}-benchmarks ALL
         DEPENDS ${htmls}
-    )
-
-
-    add_custom_target(COMMAND
-
-        COMMAND_EXPAND_LISTS
     )
 endmacro()

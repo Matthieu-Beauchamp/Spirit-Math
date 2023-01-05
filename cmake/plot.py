@@ -87,7 +87,7 @@ class Benchmark:
                     f.write(f"<th>{h}</th>")
             f.write("</tr>")
 
-            for row in self.csv.data[1:]:
+            for row in self.csv.data:
                 f.write("<tr>")
                 for h in self.csv.header.keys():
                     if h not in removed:

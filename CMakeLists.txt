@@ -72,6 +72,12 @@ spirit_define_option(
         "Select if examples should be built"
 )
 
+spirit_define_option(
+        SPIRIT_MATH_BUILD_BENCHMARKS
+        TRUE BOOL
+        "Select if examples should be built"
+)
+
 
 ############################################################
 # Paths
@@ -130,12 +136,8 @@ endif ()
 # We always need to build/provide catch for other modules which may build tests
 # This need to be seen by FetchContent even if we don't build tests
 
-spirit_define_option(SPIRIT_BASE_BUILD_CATCH
-    ${SPIRIT_BASE_BUILD_TESTS} BOOL
-    "True to expose the Catch2 testing framework and spirit's testing macros"
-)
 
-if (SPIRIT_BASE_BUILD_CATCH OR SPIRIT_BASE_BUILD_TESTS)
+if (SPIRIT_MATH_BUILD_CELERO OR SPIRIT_MATH_BUILD_BENCHMARKS)
     # May require configuring more than once because of the 
     # catch_user_config.hpp header generation
     add_subdirectory(benchmarks/Celero)
@@ -144,5 +146,5 @@ if (SPIRIT_BASE_BUILD_CATCH OR SPIRIT_BASE_BUILD_TESTS)
 endif()
 
 if (SPIRIT_MATH_BUILD_BENCHMARKS)
-    add_subdirectory("${SPIRIT_MATH_ROOT}/examples/")
+    add_subdirectory("${SPIRIT_MATH_ROOT}/benchmarks/")
 endif ()
