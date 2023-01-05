@@ -1,5 +1,10 @@
+function(celero_include_internal targetName)
+    target_include_directories(${targetName} PRIVATE ${CMAKE_CURRENT_FUNCTION_LIST_DIR}/../benchmarks/Celero/include/)
+endfunction()
+
 macro(spirit_benchmark spiritLib targetName ...)
     add_executable(${targetName} ${...})
+    celero_include_internal(${targetName})
     target_link_libraries(${targetName} celero)
 
     set(benchSrcsVar ${spiritLib}-benchSrcs)

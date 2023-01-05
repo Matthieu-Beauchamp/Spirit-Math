@@ -5,49 +5,59 @@ CELERO_MAIN
 class SortFixture : public celero::TestFixture
 {
 public:
-    SortFixture()
-    {
-    }
 
-    virtual std::vector<celero::TestFixture::ExperimentValue> getExperimentValues() const override
+    SortFixture() {}
+
+    virtual std::vector<celero::TestFixture::ExperimentValue>
+    getExperimentValues() const override
     {
         std::vector<celero::TestFixture::ExperimentValue> problemSpace;
 
-        // We will run some total number of sets of tests together. 
+        // We will run some total number of sets of tests together.
         // Each one growing by a power of 2.
         const int totalNumberOfTests = 6;
 
-        for(int i = 0; i < totalNumberOfTests; i++)
+        for (int i = 0; i < totalNumberOfTests; i++)
         {
             // ExperimentValues is part of the base class and allows us to specify
             // some values to control various test runs to end up building a nice graph.
-            problemSpace.push_back({int64_t(pow(2, i+1))});
+            problemSpace.push_back({2 << (i + 1)});
         }
 
         return problemSpace;
     }
 
     /// Before each run, build a vector of random integers.
-    virtual void setUp(const celero::TestFixture::ExperimentValue& experimentValue)
+    virtual void
+    setUp(const celero::TestFixture::ExperimentValue & experimentValue)
     {
         this->arraySize = experimentValue.Value;
         this->array.reserve(this->arraySize);
     }
 
-    /// Before each iteration. A common utility function to push back random ints to sort.
-    void randomize()
+    virtual void
+    tearDown() override
     {
-        for(int i = 0; i < this->arraySize; i++)
+    }
+
+    /// Before each iteration. A common utility function to push back random ints to sort.
+    void
+    randomize()
+    {
+        for (int i = 0; i < this->arraySize; i++)
         {
             this->array.push_back(rand());
         }
     }
 
     /// After each iteration, clear the vector of random integers.
-    void clear()
+    void
+    clear()
     {
         this->array.clear();
     }
+
+    std::vector<int64_t> testArray;
 
     std::vector<int64_t> array;
     int64_t arraySize;
@@ -59,13 +69,13 @@ BASELINE_F(SortRandInts, BubbleSort, SortFixture, 30, 10000)
 {
     this->randomize();
 
-    for(int x = 0; x < this->arraySize; x++)
+    for (int x = 0; x < this->arraySize; x++)
     {
-        for(int y = 0; y < this->arraySize - 1; y++)
+        for (int y = 0; y < this->arraySize - 1; y++)
         {
-            if(this->array[y] > this->array[y+1])
+            if (this->array[y] > this->array[y + 1])
             {
-                std::swap(this->array[y], this->array[y+1]);
+                std::swap(this->array[y], this->array[y + 1]);
             }
         }
     }
@@ -77,13 +87,13 @@ BENCHMARK_F(SortRandInts, SelectionSort, SortFixture, 30, 10000)
 {
     this->randomize();
 
-    for(int x = 0; x < this->arraySize; x++)
+    for (int x = 0; x < this->arraySize; x++)
     {
         auto minIdx = x;
 
-        for(int y = x; y < this->arraySize; y++)
+        for (int y = x; y < this->arraySize; y++)
         {
-            if(this->array[minIdx] > this->array[y])
+            if (this->array[minIdx] > this->array[y])
             {
                 minIdx = y;
             }
