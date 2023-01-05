@@ -9,7 +9,7 @@ cmake_minimum_required(VERSION 3.13)
 
 project(Spirit-Math)
 
-# set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 ############################################################
 # C++ config
@@ -123,5 +123,26 @@ if (SPIRIT_MATH_BUILD_DOCS)
 endif ()
 
 if (SPIRIT_MATH_BUILD_EXAMPLES)
+    add_subdirectory("${SPIRIT_MATH_ROOT}/examples/")
+endif ()
+
+
+# We always need to build/provide catch for other modules which may build tests
+# This need to be seen by FetchContent even if we don't build tests
+
+spirit_define_option(SPIRIT_BASE_BUILD_CATCH
+    ${SPIRIT_BASE_BUILD_TESTS} BOOL
+    "True to expose the Catch2 testing framework and spirit's testing macros"
+)
+
+if (SPIRIT_BASE_BUILD_CATCH OR SPIRIT_BASE_BUILD_TESTS)
+    # May require configuring more than once because of the 
+    # catch_user_config.hpp header generation
+    add_subdirectory(benchmarks/Celero)
+
+    include(benchmarking)
+endif()
+
+if (SPIRIT_MATH_BUILD_BENCHMARKS)
     add_subdirectory("${SPIRIT_MATH_ROOT}/examples/")
 endif ()
