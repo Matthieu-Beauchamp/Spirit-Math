@@ -30,15 +30,16 @@ if (NOT SPIRIT_SUPER_PROJECT)
         Spirit-Base
         GIT_REPOSITORY https://github.com/Matthieu-Beauchamp/Spirit-Base.git
         GIT_TAG        origin/master
-        SOURCE_DIR spiritModules # oops are put in build*
     )
 
     if (SPIRIT_MATH_BUILD_TESTS)
         set(SPIRIT_BASE_BUILD_CATCH TRUE)
     endif()
     
-    # other declarations...
-
+    if (SPIRIT_MATH_BUILD_BENCHMARKS)
+        set(SPIRIT_BASE_BUILD_CELERO TRUE)
+    endif()
+    
     FetchContent_MakeAvailable(Spirit-Base) # ...
 endif()
 
@@ -74,7 +75,7 @@ spirit_define_option(
 
 spirit_define_option(
         SPIRIT_MATH_BUILD_BENCHMARKS
-        TRUE BOOL
+        FALSE BOOL
         "Select if examples should be built"
 )
 
@@ -105,7 +106,14 @@ target_include_directories(spirit-math PUBLIC ${SPIRIT_MATH_INCLUDE_DIR})
 
 # Dependencies #############################################
 
-# build_an_ext_lib(${SPIRIT_MATH_ROOT}/ext_libs/lib spirit-math)
+# xsimd
+add_subdirectory(ext_libs/xsimd)
+target_link_libraries(spirit-math xsimd)
+
+# eigen
+set(EIGEN_BUILD_DOC OFF CACHE INTERNAL "Don't litter with HTML" FORCE)
+add_subdirectory(ext_libs/eigen)
+target_link_libraries(spirit-math eigen)
 
 
 # Build Spirit Module #############################################
@@ -131,19 +139,6 @@ endif ()
 if (SPIRIT_MATH_BUILD_EXAMPLES)
     add_subdirectory("${SPIRIT_MATH_ROOT}/examples/")
 endif ()
-
-
-# We always need to build/provide catch for other modules which may build tests
-# This need to be seen by FetchContent even if we don't build tests
-
-
-if (SPIRIT_MATH_BUILD_CELERO OR SPIRIT_MATH_BUILD_BENCHMARKS)
-    # May require configuring more than once because of the 
-    # catch_user_config.hpp header generation
-    add_subdirectory(benchmarks/Celero)
-
-    include(benchmarking)
-endif()
 
 if (SPIRIT_MATH_BUILD_BENCHMARKS)
     add_subdirectory("${SPIRIT_MATH_ROOT}/benchmarks/")

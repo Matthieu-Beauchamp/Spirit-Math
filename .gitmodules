@@ -4,9 +4,6 @@
 [submodule "ext_libs/xsimd"]
 	path = ext_libs/xsimd
 	url = https://github.com/xtensor-stack/xsimd
-[submodule "benchmarks/Celero"]
-	path = benchmarks/Celero
-	url = https://github.com/DigitalInBlue/Celero
 [submodule "ext_libs/eigen"]
 	path = ext_libs/eigen
 	url = https://gitlab.com/libeigen/eigen
