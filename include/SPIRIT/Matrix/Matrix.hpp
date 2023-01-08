@@ -26,11 +26,710 @@
 #ifndef SPIRIT_MATRIX_HPP
 #define SPIRIT_MATRIX_HPP
 
+#include "SPIRIT/Base.hpp"
 #include "Eigen/Core"
 
 namespace sp
 {
 
+namespace details
+{
+
+////////////////////////////////////////////////////////////
+/// \brief Wraps the Matrix class from Eigen
+///
+/// The main purpose of wrapping this class is to allow swapping
+/// implementation easily later on if needed.
+/// Also Eigen's implementation is very complete (bloated), we hide some features.
+///
+/// Note the use of auto on the return types, Eigen uses Expression template
+/// to optimize calculations.
+////////////////////////////////////////////////////////////
+template <class T, sp::Int32 mRows, sp::Int32 nCols>
+using MatrixBase
+    = Eigen::Matrix<T, mRows, nCols, Eigen::AutoAlign | Eigen::ColMajor>;
+
+// class MatrixBase
+//     : private Eigen::Matrix<T, mRows, nCols, Eigen::AutoAlign | Eigen::ColMajor>
+// {
+//     typedef Eigen::Matrix<T, mRows, nCols, Eigen::AutoAlign | Eigen::ColMajor> Base;
+
+// public:
+
+//     ////////////////////////////////////////////////////////////
+//     // Construction and assignement
+//     ////////////////////////////////////////////////////////////
+
+//     using Base::Base;
+//     using Base::operator=;
+
+//     using Base::Identity;
+//     using Base::Random;
+//     using Base::Zero;
+
+//     using Base::homogeneous; // for vects
+
+//     using Base::Unit;
+//     using Base::UnitW;
+//     using Base::UnitX;
+//     using Base::UnitY;
+//     using Base::UnitZ;
+
+
+//     ////////////////////////////////////////////////////////////
+//     // Matrix operations
+//     ////////////////////////////////////////////////////////////
+
+//     /// \warning do not use \code A = A.transposed() \endcode
+//     /// it causes a bug. use \code A = A.transpose() \endcode instead
+//     auto
+//     transposed() const
+//     {
+//         return Base::transpose();
+//     }
+
+//     auto
+//     transpose()
+//     {
+//         return Base::transposeInPlace();
+//     }
+
+//     using Base::computeInverseAndDetWithCheck;
+//     using Base::computeInverseWithCheck;
+
+//     using Base::determinant;
+//     using Base::inverse;
+
+//     using Base::cross;
+//     using Base::dot;
+
+//     using Base::squaredNorm;
+
+//     using Base::norm;
+//     using Base::normalize;
+//     using Base::normalized;
+
+//     using Base::stableNorm;
+//     using Base::stableNormalize;
+//     using Base::stableNormalized;
+
+//     // using Base::trace;
+
+//     ////////////////////////////////////////////////////////////
+//     // Decompositions and solving
+//     ////////////////////////////////////////////////////////////
+
+//     // https://eigen.tuxfamily.org/dox/group__TopicLinearAlgebraDecompositions.html
+//     using Base::colPivHouseholderQr;
+//     using Base::fullPivLu;
+//     using Base::householderQr;
+//     using Base::partialPivLu;
+
+//     template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
+//     auto
+//     solve(const MatrixBase<U, mRowsOther, nColsOther> & other) const
+//     {
+//         return this->householderQr().solve(other);
+//     }
+
+//     template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
+//     auto
+//     solveAccurate(const MatrixBase<U, mRowsOther, nColsOther> & other) const
+//     {
+//         return this->colPivHouseholderQr().solve(other);
+//     }
+
+//     ////////////////////////////////////////////////////////////
+//     // Element access
+//     ////////////////////////////////////////////////////////////
+
+//     // using Base::data;
+//     using Base::size;
+
+
+//     using Base::operator[];
+//     using Base::operator(); // indexed view
+
+//     using Base::coeff;
+//     using Base::col;
+//     using Base::cols; // nCols
+
+//     using Base::row;
+//     using Base::rows; // mRows
+
+//     // using Base::colStride;
+//     // using Base::rowStride;
+
+//     // using Base::block;
+//     // bottom rows, corners, ...
+
+//     // using Base::diagonal;
+
+//     // not sure we want those
+//     using Base::colwise;
+//     using Base::rowwise;
+
+//     // using Base::triangularView;
+
+//     using Base::w;
+//     using Base::x;
+//     using Base::y;
+//     using Base::z;
+
+
+//     ////////////////////////////////////////////////////////////
+//     // Component wise addition and substraction
+//     ////////////////////////////////////////////////////////////
+
+//     using Base::operator+;
+//     using Base::operator+=;
+
+//     using Base::operator-;
+//     using Base::operator-=;
+
+//     ////////////////////////////////////////////////////////////
+//     // Matrix product and Scalar multiplication/division
+//     ////////////////////////////////////////////////////////////
+
+//     using Base::pow;
+
+//     using Base::operator*;
+//     using Base::operator*=;
+
+//     using Base::operator/;
+//     using Base::operator/=;
+
+
+//     ////////////////////////////////////////////////////////////
+//     // Comparison
+//     ////////////////////////////////////////////////////////////
+
+//     using Base::operator==;
+//     using Base::operator!=;
+//     using Base::allFinite;
+//     using Base::isApprox;
+
+//     // TODO: all the : is, has, ...
+
+//     ////////////////////////////////////////////////////////////
+//     // Formatting / output
+//     ////////////////////////////////////////////////////////////
+
+//     using Base::format;
+// };
+
+} // namespace details
+
+
+template <class, sp::Int32>
+class Transformation;
+
+
+// Here we remove some of Eigen's optimization potential by converting results
+// back to matrices. This is to avoid unexpected bugs due to aliasing.
+// Furthermore, we don't expect any big equations in our usage.
+//  any complex calculations can be made into a method using Eigen's Matrix
+template <class T, sp::Int32 mRows, sp::Int32 nCols>
+class Matrix
+{
+    constexpr static bool isColVector = nCols == 1;
+    constexpr static bool isRowVector = mRows == 1 && !isColVector;
+    constexpr static bool isValue     = isColVector && mRows == 1;
+    constexpr static bool isVector    = isRowVector || isColVector;
+
+public:
+
+    ////////////////////////////////////////////////////////////
+    // Construction and assignement
+    ////////////////////////////////////////////////////////////
+
+    // leaves the matrix uninitialized
+    Matrix() {}
+
+    Matrix(std::initializer_list<T> values)
+    {
+        static_assert(
+            isVector,
+            "Use initialization per row if this is not a vector"
+        );
+        for (sp::Int32 i = 0; i < nCols * mRows; ++i)
+        {
+            mat[i] = values.begin()[i];
+        }
+    }
+
+    template <class Scalar>
+    Matrix(const std::initializer_list<std::initializer_list<Scalar>> & rows)
+        : mat{rows}
+    {
+        static_assert(
+            !isVector,
+            "use coefficient initialization if this is a vector"
+        );
+    }
+
+    Matrix(const Matrix &) = default;
+
+    Matrix &
+    operator=(const Matrix &)
+        = default;
+
+
+    ////////////////////////////////////////////////////////////
+    // Static construction
+    ////////////////////////////////////////////////////////////
+
+    // Returns a matrix with the values of the identity matrix (not required to be square)
+    static Matrix
+    Identity()
+    {
+        return Matrix{Mat::Identity()};
+    }
+
+    // Filled with zeros
+    static Matrix
+    Zero()
+    {
+        return Mat::Zero();
+    }
+
+    // return a random matrix.
+    // for float types, values are in [-1, 1].
+    // for integer types are spread over their entire range.
+    static Matrix
+    Random()
+    {
+        return Mat::Random();
+    }
+
+    static Matrix
+    Unit(sp::Int32 dimension)
+    {
+        static_assert(isVector, "Must be a Vector type");
+        return Mat::Unit(dimension);
+    }
+
+    static Matrix
+    UnitX()
+    {
+        static_assert(isVector, "Must be a Vector type");
+        return Mat::UnitX();
+    }
+
+    static Matrix
+    UnitY()
+    {
+        static_assert(isVector, "Must be a Vector type");
+        return Mat::UnitY();
+    }
+
+    static Matrix
+    UnitZ()
+    {
+        static_assert(isVector, "Must be a Vector type");
+        return Mat::UnitZ();
+    }
+
+    static Matrix
+    UnitW()
+    {
+        static_assert(isVector, "Must be a Vector type");
+        return Mat::UnitW();
+    }
+
+
+    ////////////////////////////////////////////////////////////
+    // Conversions / transformations
+    ////////////////////////////////////////////////////////////
+
+    typedef Matrix<T, isRowVector ? mRows + 1 : mRows, isColVector ? nCols + 1 : nCols>
+        Homogeneous;
+    Homogeneous
+    homogeneous() const
+    {
+        static_assert(isVector, "Must be a Vector type");
+        return mat.homogeneous();
+    }
+
+    /// \warning do not do A = A.transposed()
+    Matrix<T, nCols, mRows>
+    transposed() const
+    {
+        return mat.transposed();
+    }
+
+    void
+    transpose()
+    {
+        static_assert(mRows == nCols, "Must be square");
+        mat.transpose();
+    }
+
+    // returns true if the inversion was successful,
+    // otherwise false (is the matrix still preserved?)
+    bool
+    inverse()
+    {
+        bool wasInversed;
+        mat.computeInverseWithCheck(mat, wasInversed);
+        return wasInversed;
+    }
+
+    Matrix
+    inversed(bool & wasInversed)
+    {
+        Matrix inv;
+        mat.computeInverseWithCheck(inv, wasInversed);
+        return inv;
+    }
+
+    ////////////////////////////////////////////////////////////
+    // Misc
+    ////////////////////////////////////////////////////////////
+
+    T
+    determinant() const
+    {
+        return mat.determinant();
+    }
+
+
+    template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
+    T
+    cross(const Matrix<U, mRowsOther, nColsOther> & other) const
+    {
+        static_assert(mRows * nCols == 2, "Must be a 2D vector");
+        static_assert(mRowsOther * nColsOther == 2, "Must be a 2D vector");
+
+        return mat.cross(other);
+    }
+
+    // returns the matrix of the cross product vectors with vec.
+    // TODO: Behavior is unclear
+    template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
+    Matrix
+    cross(const Matrix<U, mRowsOther, nColsOther> & vec) const
+    {
+        static_assert(mRows == 3 || nCols == 3, "Must be made of 3D vectors");
+
+        static_assert(
+            vec.isVector && (mRowsOther == 3 || nColsOther == 3),
+            "Must be a 3D vector"
+        );
+
+        return mat.cross(vec);
+    }
+
+    // returns the matrix of the cross product vectors with vec.
+    // Does the cross product of 4D vectors as if they were 3D.
+    // TODO: Behavior is unclear
+    template <
+        class U,
+        sp::Int32 mRowsOther,
+        sp::Int32 nColsOther,
+        std::enable_if_t<
+            sp::Matrix<U, mRowsOther, nColsOther>::isVector
+                && (mRowsOther == 4 || nColsOther == 4),
+            bool> = true>
+    Matrix
+    cross(const Matrix<U, mRowsOther, nColsOther> & vec) const
+    {
+        static_assert(mRows == 4 || nCols == 4, "Must be made of 4D vectors");
+
+        return mat.cross3(vec);
+    }
+
+
+    T
+    squaredNorm() const
+    {
+        static_assert(isVector, "Must be a vector type");
+        return mat.squaredNorm();
+    }
+    T
+    norm() const
+    {
+        static_assert(isVector, "Must be a vector type");
+        return mat.norm();
+    }
+
+    // unchanged if norm == 0
+    void
+    normalize()
+    {
+        static_assert(isVector, "Must be a vector type");
+        mat.normalize();
+    }
+
+    // returns *this if norm == 0
+    Matrix
+    normalized() const
+    {
+        static_assert(isVector, "Must be a vector type");
+        return mat.normalized();
+    }
+
+    ////////////////////////////////////////////////////////////
+    // Linear equations solving
+    ////////////////////////////////////////////////////////////
+
+    // if not good solution is found, returns junk
+    // if many solutions exists, chooses one arbitrarily
+
+    template <class U, sp::Int32 nColsOther>
+    Matrix<T, nCols, nColsOther>
+    solve(const Matrix<U, mRows, nColsOther> & other) const
+    {
+        return mat.householderQr().solve(other.mat);
+    }
+
+    template <class U, sp::Int32 nColsOther>
+    Matrix<T, nCols, nColsOther>
+    solveAccurate(const Matrix<U, mRows, nColsOther> & other) const
+    {
+        return mat.colPivHouseholderQr().solve(other.mat);
+    }
+
+    // Verifies that the solution to x = A.solve(b) of the system Ax=b is valid
+    // todo: don't use eigen directly here
+    template <class U, sp::Int32 nColsOther>
+    bool
+    isGoodSolution(
+        const Matrix<T, nCols, nColsOther> & x,
+        const Matrix<U, mRows, nColsOther> & b,
+        T tolerance = Eigen::NumTraits<T>::dummy_precision()
+    ) const
+    {
+        return (*this * x).isApprox(b, tolerance);
+    }
+
+    ////////////////////////////////////////////////////////////
+    // Element access
+    ////////////////////////////////////////////////////////////
+
+    constexpr sp::Int32
+    size()
+    {
+        return mat.size();
+    }
+
+    constexpr sp::Int32
+    cols()
+    {
+        return mat.cols();
+    }
+
+    constexpr sp::Int32
+    rows()
+    {
+        return mat.rows();
+    }
+
+    Matrix<T, mRows, 1>
+    col(sp::Int32 index)
+    {
+        return mat.col(index);
+    }
+
+    Matrix<T, 1, nCols>
+    row(sp::Int32 index)
+    {
+        return mat.row(index);
+    }
+
+    // Allows applying operations column-wise
+    // auto colwise() {return mat.colwise();}
+    // auto rowwise() {return mat.rowwise();}
+
+    T &
+    operator[](sp::Int32 index)
+    {
+        static_assert(isVector, "Disabled for matrices, use matrix(row, column)");
+        return mat[index];
+    }
+
+    const T &
+    operator[](sp::Int32 index) const
+    {
+        static_assert(isVector, "Disabled for matrices, use matrix(row, column)");
+        return mat[index];
+    }
+
+    T &
+    operator()(sp::Int32 row, sp::Int32 col)
+    {
+        return mat(row, col);
+    }
+
+    const T &
+    operator()(sp::Int32 row, sp::Int32 col) const
+    {
+        return mat(row, col);
+    }
+
+    // TODO: x, y, z, w ...
+
+    ////////////////////////////////////////////////////////////
+    // Matrix operators
+    ////////////////////////////////////////////////////////////
+
+    Matrix
+    operator+(const Matrix & other)
+    {
+        return mat + other.mat;
+    }
+
+    Matrix &
+    operator+=(const Matrix & other)
+    {
+        mat += other.mat;
+        return *this;
+    }
+
+    Matrix
+    operator-(const Matrix & other)
+    {
+        return mat - other.mat;
+    }
+
+    Matrix &
+    operator-=(const Matrix & other)
+    {
+        mat -= other.mat;
+        return *this;
+    }
+
+    template <class U, sp::Int32 nColsOther>
+    Matrix<T, mRows, nColsOther>
+    operator*(const Matrix<U, nCols, nColsOther> & other)
+    {
+        return mat * other;
+    }
+
+    template <class U>
+    Matrix &
+    operator*=(const Matrix<U, nCols, nCols> & other)
+    {
+        mat *= other;
+        return *this;
+    }
+
+    ////////////////////////////////////////////////////////////
+    // Scalar operators
+    ////////////////////////////////////////////////////////////
+
+    template <class Scalar>
+    Matrix
+    operator*(const Scalar & scalar)
+    {
+        return mat * scalar;
+    }
+
+    template <class Scalar>
+    Matrix &
+    operator*=(const Scalar & scalar)
+    {
+        mat *= scalar;
+        return *this;
+    }
+
+    template <class Scalar>
+    Matrix
+    operator/(const Scalar & scalar)
+    {
+        return mat / scalar;
+    }
+
+    template <class Scalar>
+    Matrix &
+    operator/=(const Scalar & scalar)
+    {
+        mat /= scalar;
+        return *this;
+    }
+
+
+    ////////////////////////////////////////////////////////////
+    // Comparison
+    ////////////////////////////////////////////////////////////
+
+    template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
+    bool
+    operator==(const Matrix<U, mRowsOther, nColsOther> & other) const
+    {
+        return true; // mat == other.mat;
+    }
+
+
+    template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
+    bool
+    operator!=(const Matrix<U, mRowsOther, nColsOther> & other) const
+    {
+        return mat != other.mat;
+    }
+
+    template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
+    bool
+    isApprox(
+        const Matrix<U, mRowsOther, nColsOther> & other,
+        T tolerance = Eigen::NumTraits<T>::dummy_precision()
+    ) const
+    {
+        return mat.isApprox(other.mat, tolerance);
+    }
+
+
+private:
+
+    template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
+    friend class Matrix;
+
+    // Wants to construct matrices from Eigen matrices
+    template <class U, sp::Int32 dim>
+    friend class Transformation;
+
+    typedef sp::details::MatrixBase<T, mRows, nCols> Mat;
+
+    Matrix(const Mat & mat) : mat{mat} {}
+
+    Mat mat;
+
+public:
+
+    // Required for columnwise / rowwise manipulation...
+    // operator Mat(){
+    //     return this->mat;
+    // }
+};
+
+
+template <class T, sp::Int32 dim>
+using ColVector = sp::Matrix<T, dim, 1>;
+
+template <class T, sp::Int32 dim>
+using RowVector = sp::Matrix<T, 1, dim>;
+
+template <class T, sp::Int32 dim>
+using Vector = sp::ColVector<T, dim>;
+
+template <sp::Int32 dim>
+using Vec = sp::Vector<float, dim>;
+
+template <sp::Int32 dim>
+using VecI = sp::Vector<sp::Int32, dim>;
+
+
+typedef sp::Vec<2> Vec2;
+typedef sp::Vec<3> Vec3;
+typedef sp::Vec<4> Vec4;
+
+typedef sp::VecI<2> Vec2i;
+typedef sp::VecI<3> Vec3i;
+typedef sp::VecI<4> Vec4i;
+
+typedef sp::Matrix<float, 2, 2> Mat2;
+typedef sp::Matrix<float, 3, 3> Mat3;
+typedef sp::Matrix<float, 4, 4> Mat4;
 
 
 } // namespace sp
