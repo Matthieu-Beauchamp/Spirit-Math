@@ -28,7 +28,7 @@
 
 #include "SPIRIT/Base.hpp"
 #include "Eigen/Geometry"
-#include "SPIRIT/Matrix/Matrix.hpp"
+#include "SPIRIT/Math/Matrix/Matrix.hpp"
 #include <numbers>
 
 
@@ -50,6 +50,19 @@ degrees(T radians)
 }
 
 
+// TODO: Static constructors (or derived classes specializing transforms),
+//      transform around.
+
+////////////////////////////////////////////////////////////
+/// \brief Represent matrix transformations to vectors
+/// 
+/// All operations are applied in the order they are called.
+/// For multiplications, the last transformation is the leftmost.
+/// \code 
+/// sp::Transformation<float, 2> t{};
+/// t.translate({1, 2}).rotate(sp::radians(45.f)); // translate, then rotate(around the origin)
+/// \endcode
+////////////////////////////////////////////////////////////
 template <class T, sp::Int32 dim>
 class Transformation
 {
@@ -65,6 +78,8 @@ class Transformation
 public:
 
     Transformation() { t.setIdentity(); }
+
+    Transformation(const Transformation&) = default;
 
     template <class U>
     Transformation(const sp::Matrix<U, dim + 1, dim + 1> & mat) : t{mat}

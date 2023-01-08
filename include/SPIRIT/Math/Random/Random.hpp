@@ -26,6 +26,7 @@
 #ifndef SPIRIT_RANDOM_HPP
 #define SPIRIT_RANDOM_HPP
 
+#include "SPIRIT/Base.hpp"
 #include <random>
 
 
@@ -53,16 +54,16 @@ public:
     /// General case, (almost) all other functions make specialized calls
     /// to this template
     ///
-    /// \tparam Type Type to be used / returned
+    /// \tparam T Type to be used / returned
     /// \tparam distrib One of the std:: distributions in <random> header
     /// \param a First distribution constructor parameter
     /// \param b Second distribution constructor parameter
     /// \return Random generated number
     ///
     //////////////////////////////////////////////////////////
-    template <typename Type, class distrib>
-    static Type
-    random_impl(Type a, Type b);
+    template <typename T, class distrib>
+    static T
+    random_impl(T a, T b);
 
 
     //////////////////////////////////////////////////////////

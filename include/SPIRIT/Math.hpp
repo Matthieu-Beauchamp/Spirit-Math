@@ -23,5 +23,8 @@
 ////////////////////////////////////////////////////////////
 
 
-#include "Random/Random.hpp"
+#include "Math/Random/Random.hpp"
+#include "Math/Batch/Batch.hpp"
+#include "Math/Matrix/Matrix.hpp"
+#include "Math/Transform/Transform.hpp"
 

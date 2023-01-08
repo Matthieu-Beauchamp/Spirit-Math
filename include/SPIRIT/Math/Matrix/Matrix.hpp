@@ -46,16 +46,13 @@ namespace details
 /// to optimize calculations.
 ////////////////////////////////////////////////////////////
 template <class T, sp::Int32 mRows, sp::Int32 nCols>
-using MatrixBase
-    = Eigen::Matrix<T, mRows, nCols, Eigen::AutoAlign | Eigen::ColMajor>;
+using MatrixBase = Eigen::Matrix<
+    T,
+    mRows,
+    nCols>;//, // condition avoids breaking on row vectors
+    // Eigen::AutoAlign | (mRows == 1 ? Eigen::RowMajor : Eigen::ColMajor)>;
 
-// class MatrixBase
-//     : private Eigen::Matrix<T, mRows, nCols, Eigen::AutoAlign | Eigen::ColMajor>
-// {
-//     typedef Eigen::Matrix<T, mRows, nCols, Eigen::AutoAlign | Eigen::ColMajor> Base;
-
-// public:
-
+// Used methods
 //     ////////////////////////////////////////////////////////////
 //     // Construction and assignement
 //     ////////////////////////////////////////////////////////////
@@ -80,8 +77,6 @@ using MatrixBase
 //     // Matrix operations
 //     ////////////////////////////////////////////////////////////
 
-//     /// \warning do not use \code A = A.transposed() \endcode
-//     /// it causes a bug. use \code A = A.transpose() \endcode instead
 //     auto
 //     transposed() const
 //     {
@@ -112,8 +107,6 @@ using MatrixBase
 //     using Base::stableNorm;
 //     using Base::stableNormalize;
 //     using Base::stableNormalized;
-
-//     // using Base::trace;
 
 //     ////////////////////////////////////////////////////////////
 //     // Decompositions and solving
@@ -206,16 +199,12 @@ using MatrixBase
 
 //     using Base::operator==;
 //     using Base::operator!=;
-//     using Base::allFinite;
 //     using Base::isApprox;
-
-//     // TODO: all the : is, has, ...
 
 //     ////////////////////////////////////////////////////////////
 //     // Formatting / output
 //     ////////////////////////////////////////////////////////////
 
-//     using Base::format;
 // };
 
 } // namespace details
@@ -258,8 +247,7 @@ public:
         }
     }
 
-    template <class Scalar>
-    Matrix(const std::initializer_list<std::initializer_list<Scalar>> & rows)
+    Matrix(const std::initializer_list<std::initializer_list<T>> & rows)
         : mat{rows}
     {
         static_assert(
@@ -290,7 +278,7 @@ public:
     static Matrix
     Zero()
     {
-        return Mat::Zero();
+        return Matrix{Mat::Zero()};
     }
 
     // return a random matrix.
@@ -299,42 +287,42 @@ public:
     static Matrix
     Random()
     {
-        return Mat::Random();
+        return Matrix{Mat::Random()};
     }
 
     static Matrix
     Unit(sp::Int32 dimension)
     {
         static_assert(isVector, "Must be a Vector type");
-        return Mat::Unit(dimension);
+        return Matrix{Mat::Unit(dimension)};
     }
 
     static Matrix
     UnitX()
     {
         static_assert(isVector, "Must be a Vector type");
-        return Mat::UnitX();
+        return Matrix{Mat::UnitX()};
     }
 
     static Matrix
     UnitY()
     {
         static_assert(isVector, "Must be a Vector type");
-        return Mat::UnitY();
+        return Matrix{Mat::UnitY()};
     }
 
     static Matrix
     UnitZ()
     {
         static_assert(isVector, "Must be a Vector type");
-        return Mat::UnitZ();
+        return Matrix{Mat::UnitZ()};
     }
 
     static Matrix
     UnitW()
     {
         static_assert(isVector, "Must be a Vector type");
-        return Mat::UnitW();
+        return Matrix{Mat::UnitW()};
     }
 
 
@@ -348,21 +336,21 @@ public:
     homogeneous() const
     {
         static_assert(isVector, "Must be a Vector type");
-        return mat.homogeneous();
+        return Homogeneous{mat.homogeneous()};
     }
 
     /// \warning do not do A = A.transposed()
-    Matrix<T, nCols, mRows>
+    [[nodiscard]] Matrix<T, nCols, mRows>
     transposed() const
     {
-        return mat.transposed();
+        return Matrix<T, nCols, mRows>{mat.transpose()};
     }
 
     void
     transpose()
     {
         static_assert(mRows == nCols, "Must be square");
-        mat.transpose();
+        mat.transposeInPlace();
     }
 
     // returns true if the inversion was successful,
@@ -375,11 +363,11 @@ public:
         return wasInversed;
     }
 
-    Matrix
-    inversed(bool & wasInversed)
+    [[nodiscard]] Matrix
+    inversed(bool & wasInversed) const
     {
         Matrix inv;
-        mat.computeInverseWithCheck(inv, wasInversed);
+        mat.computeInverseWithCheck(inv.mat, wasInversed);
         return inv;
     }
 
@@ -393,6 +381,12 @@ public:
         return mat.determinant();
     }
 
+    template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
+    T
+    dot(const Matrix<U, mRowsOther, nColsOther> & other) const
+    {
+        return mat.dot(other.mat);
+    }
 
     template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
     T
@@ -417,7 +411,7 @@ public:
             "Must be a 3D vector"
         );
 
-        return mat.cross(vec);
+        return Matrix{mat.cross(vec)};
     }
 
     // returns the matrix of the cross product vectors with vec.
@@ -436,7 +430,7 @@ public:
     {
         static_assert(mRows == 4 || nCols == 4, "Must be made of 4D vectors");
 
-        return mat.cross3(vec);
+        return Matrix{mat.cross3(vec)};
     }
 
 
@@ -466,28 +460,29 @@ public:
     normalized() const
     {
         static_assert(isVector, "Must be a vector type");
-        return mat.normalized();
+        return Matrix{mat.normalized()};
     }
 
     ////////////////////////////////////////////////////////////
     // Linear equations solving
     ////////////////////////////////////////////////////////////
 
-    // if not good solution is found, returns junk
+    // if no good solution is found, returns junk
     // if many solutions exists, chooses one arbitrarily
 
     template <class U, sp::Int32 nColsOther>
     Matrix<T, nCols, nColsOther>
     solve(const Matrix<U, mRows, nColsOther> & other) const
     {
-        return mat.householderQr().solve(other.mat);
+        return Matrix<T, nCols, nColsOther>{mat.householderQr().solve(other.mat)};
     }
 
     template <class U, sp::Int32 nColsOther>
     Matrix<T, nCols, nColsOther>
     solveAccurate(const Matrix<U, mRows, nColsOther> & other) const
     {
-        return mat.colPivHouseholderQr().solve(other.mat);
+        return Matrix<T, nCols, nColsOther>{
+            mat.colPivHouseholderQr().solve(other.mat)};
     }
 
     // Verifies that the solution to x = A.solve(b) of the system Ax=b is valid
@@ -508,33 +503,35 @@ public:
     ////////////////////////////////////////////////////////////
 
     constexpr sp::Int32
-    size()
+    size() const
     {
         return mat.size();
     }
 
     constexpr sp::Int32
-    cols()
+    cols() const
     {
         return mat.cols();
     }
 
     constexpr sp::Int32
-    rows()
+    rows() const
     {
         return mat.rows();
     }
 
+    // TODO: col and row should return an object that provides read/write access
+    //  and from which a new matrix can be constructed
     Matrix<T, mRows, 1>
-    col(sp::Int32 index)
+    col(sp::Int32 index) const
     {
-        return mat.col(index);
+        return Matrix<T, mRows, 1>{mat.col(index)};
     }
 
     Matrix<T, 1, nCols>
-    row(sp::Int32 index)
+    row(sp::Int32 index) const
     {
-        return mat.row(index);
+        return Matrix<T, 1, nCols>{mat.row(index)};
     }
 
     // Allows applying operations column-wise
@@ -574,9 +571,9 @@ public:
     ////////////////////////////////////////////////////////////
 
     Matrix
-    operator+(const Matrix & other)
+    operator+(const Matrix & other) const
     {
-        return mat + other.mat;
+        return Matrix{mat + other.mat};
     }
 
     Matrix &
@@ -587,9 +584,9 @@ public:
     }
 
     Matrix
-    operator-(const Matrix & other)
+    operator-(const Matrix & other) const
     {
-        return mat - other.mat;
+        return Matrix{mat - other.mat};
     }
 
     Matrix &
@@ -601,16 +598,16 @@ public:
 
     template <class U, sp::Int32 nColsOther>
     Matrix<T, mRows, nColsOther>
-    operator*(const Matrix<U, nCols, nColsOther> & other)
+    operator*(const Matrix<U, nCols, nColsOther> & other) const
     {
-        return mat * other;
+        return Matrix<T, mRows, nColsOther>{mat * other.mat};
     }
 
     template <class U>
     Matrix &
     operator*=(const Matrix<U, nCols, nCols> & other)
     {
-        mat *= other;
+        mat *= other.mat;
         return *this;
     }
 
@@ -618,31 +615,33 @@ public:
     // Scalar operators
     ////////////////////////////////////////////////////////////
 
-    template <class Scalar>
     Matrix
-    operator*(const Scalar & scalar)
+    operator*(T scalar) const
+    {
+        return Matrix{mat * scalar};
+    }
+
+    friend Matrix
+    operator*(T scalar, const Matrix & mat)
     {
         return mat * scalar;
     }
 
-    template <class Scalar>
     Matrix &
-    operator*=(const Scalar & scalar)
+    operator*=(T scalar)
     {
         mat *= scalar;
         return *this;
     }
 
-    template <class Scalar>
     Matrix
-    operator/(const Scalar & scalar)
+    operator/(T scalar) const
     {
-        return mat / scalar;
+        return Matrix{mat / scalar};
     }
 
-    template <class Scalar>
     Matrix &
-    operator/=(const Scalar & scalar)
+    operator/=(T scalar)
     {
         mat /= scalar;
         return *this;
@@ -653,25 +652,25 @@ public:
     // Comparison
     ////////////////////////////////////////////////////////////
 
-    template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
+    template <class U>
     bool
-    operator==(const Matrix<U, mRowsOther, nColsOther> & other) const
+    operator==(const Matrix<U, mRows, nCols> & other) const
     {
-        return true; // mat == other.mat;
+        return mat == other.mat;
     }
 
 
-    template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
+    template <class U>
     bool
-    operator!=(const Matrix<U, mRowsOther, nColsOther> & other) const
+    operator!=(const Matrix<U, mRows, nCols> & other) const
     {
         return mat != other.mat;
     }
 
-    template <class U, sp::Int32 mRowsOther, sp::Int32 nColsOther>
+    template <class U>
     bool
     isApprox(
-        const Matrix<U, mRowsOther, nColsOther> & other,
+        const Matrix<U, mRows, nCols> & other,
         T tolerance = Eigen::NumTraits<T>::dummy_precision()
     ) const
     {
@@ -693,13 +692,6 @@ private:
     Matrix(const Mat & mat) : mat{mat} {}
 
     Mat mat;
-
-public:
-
-    // Required for columnwise / rowwise manipulation...
-    // operator Mat(){
-    //     return this->mat;
-    // }
 };
 
 

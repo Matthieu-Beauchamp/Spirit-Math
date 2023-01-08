@@ -118,7 +118,7 @@ template <typename T>
 T
 Random::choose(T nChoices)
 {
-    typedef sp::priv::Integer_t<T> U;
+    typedef sp::details::Integer_t<T> U;
 
     return random_impl<U, std::uniform_int_distribution<U>>(0, nChoices - 1);
 }
@@ -129,7 +129,7 @@ template <typename T>
 T
 Random::Uni::randInt(T a, T b)
 {
-    typedef sp::priv::Integer_t<T> U;
+    typedef sp::details::Integer_t<T> U;
 
     return random_impl<U, std::uniform_int_distribution<U>>(a, b);
 }
@@ -168,7 +168,7 @@ template <typename returnType, typename weightType>
 returnType
 Random::Weighted::randInt(std::vector<weightType> weights)
 {
-    typedef sp::priv::Integer_t<returnType> U;
+    typedef sp::details::Integer_t<returnType> U;
     SPIRIT_ASSERT(weights.size() + 1 <= std::numeric_limits<returnType>::max())
 
     std::discrete_distribution<U> dist{weights.begin(), weights.end()};
@@ -231,7 +231,7 @@ template <typename T, class container>
 void
 RandList::choose(T nChoices, container & receiver)
 {
-    typedef sp::priv::Integer_t<T> U;
+    typedef sp::details::Integer_t<T> U;
 
     random_Impl<U, std::uniform_int_distribution<U>, container>(
         0,
@@ -246,7 +246,7 @@ template <typename T, typename IterType>
 void
 RandList::choose(T nChoices, IterType begin, IterType end)
 {
-    typedef sp::priv::Integer_t<T> U;
+    typedef sp::details::Integer_t<T> U;
 
     random_Impl<U, IterType, std::uniform_int_distribution<U>>(
         0,
@@ -294,7 +294,7 @@ template <typename T, class container>
 void
 RandList::Uni::randInt(T a, T b, container & receiver)
 {
-    typedef sp::priv::Integer_t<T> U;
+    typedef sp::details::Integer_t<T> U;
 
     random_Impl<U, std::uniform_int_distribution<U>, container>(a, b, receiver);
 }
@@ -305,7 +305,7 @@ template <typename T, typename IterType>
 void
 RandList::Uni::randInt(T a, T b, IterType begin, IterType end)
 {
-    typedef sp::priv::Integer_t<T> U;
+    typedef sp::details::Integer_t<T> U;
 
     random_Impl<U, IterType, std::uniform_int_distribution<U>>(a, b, begin, end);
 }
@@ -384,7 +384,7 @@ template <typename valType, typename weightType, class container>
 void
 RandList::Weighted::randInt(std::vector<weightType> weights, container & receiver)
 {
-    typedef sp::priv::Integer_t<valType> U;
+    typedef sp::details::Integer_t<valType> U;
     SPIRIT_ASSERT(weights.size() + 1 <= std::numeric_limits<valType>::max())
 
     std::discrete_distribution<U> dist{weights.begin(), weights.end()};

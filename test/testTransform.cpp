@@ -1,4 +1,4 @@
-#include "SPIRIT/Transform/Transform.hpp"
+#include "SPIRIT/Math/Transform/Transform.hpp"
 #include "catch2/catch_test_macros.hpp"
 
 
@@ -28,14 +28,14 @@ TEST_CASE("Transformations")
         t.translate({1, 0}).rotate(sp::radians(90.f));
 
         sp::Vec2 p{0, 0};
-        REQUIRE(t * p == sp::Vec2{0, 1});
+        REQUIRE((t * p).isApprox(sp::Vec2{0, 1}));
 
         t = sp::Transform2D{}.rotate(sp::radians(90.f)).translate({1, 0});
         REQUIRE(t * p == sp::Vec2{1, 0});
 
         t = sp::Transform2D{}.translate({1, 0});
         t.transform(sp::Transform2D{}.rotate(sp::radians(90.f)));
-        REQUIRE(t * p == sp::Vec2{0, 1});
+        REQUIRE((t * p).isApprox(sp::Vec2{0, 1}));
     }
 
     SECTION("Inverse")
@@ -47,11 +47,18 @@ TEST_CASE("Transformations")
             .translate({3, 2, 1});
 
         sp::Vec3 p{5, 6, 4};
-        REQUIRE(t * t.inversed() * p == p);
-        REQUIRE(t.inversed() * t * p == p);
+        sp::Vec3 p2 = t * t.inversed() * p;
+        sp::Vec3 p3 = t.inversed() * t * p;
+        REQUIRE(p2.isApprox(p));
+        REQUIRE(p3.isApprox(p));
 
-        // REQUIRE(t * t.inversed() == t.inversed() * t); // TODO: Fails..? (not even approx)
-
+        // sp::Transform3D tmp{t};
+        // REQUIRE(tmp.toMatrix().inverse() == true); // invertible
+        
+        // TODO: Fails..? (not even approx) (should be identity..?)
+        // REQUIRE(t * t.inversed() == t.inversed() * t); 
+        
+        
         sp::Transform3D inv = t.inversed().inversed();
         REQUIRE(t.isApprox(inv) == true);
 

@@ -55,7 +55,7 @@ template <class T, class Arch = xsimd::default_arch>
 using Batch = xsimd::batch<T, Arch>;
 
 template <class T, std::size_t n>
-using SizedBatch = Batch<T, xsimd::make_sized_batch_t<T, n>::arch_type>;
+using SizedBatch = Batch<T, typename xsimd::make_sized_batch_t<T, n>::arch_type>;
 
 } // namespace details
 

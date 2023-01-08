@@ -5,6 +5,7 @@ macro(spirit_math_add_test testName ...)
 endmacro()
 
 spirit_math_add_test(Transform-test testTransform.cpp)
+spirit_math_add_test(Matrix-test testMatrix.cpp)
 
 # adds spirit-base-test
 spirit_test_all(spirit-math)
